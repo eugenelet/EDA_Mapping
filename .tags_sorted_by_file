@@ -1,0 +1,84 @@
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_PROGRAM_VERSION	5.8	//
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+CC	Makefile	/^CC=g++$/;"	m
+CFLAGS	Makefile	/^CFLAGS=-c -Wall$/;"	m
+DFLAGS	Makefile	/^DFLAGS=-g$/;"	m
+gate	cell.cpp	/^gate::gate(){$/;"	f	class:gate
+getCellName	cell.cpp	/^char* basicCell::getCellName(){$/;"	f	class:basicCell
+getCellName	cell.cpp	/^char* cell::getCellName(){$/;"	f	class:cell
+getDelay	cell.cpp	/^int cell::getDelay(){$/;"	f	class:cell
+getInput	cell.cpp	/^vector<int> basicCell::getInput(){$/;"	f	class:basicCell
+getInputs	cell.cpp	/^vector<int> benchCell::getInputs(){$/;"	f	class:benchCell
+getOutput	cell.cpp	/^int basicCell::getOutput(){$/;"	f	class:basicCell
+getOutputs	cell.cpp	/^vector<int> benchCell::getOutputs(){$/;"	f	class:benchCell
+getTotalCells	cell.cpp	/^int cell::getTotalCells(){$/;"	f	class:cell
+getTotalInputNodes	cell.cpp	/^int cell::getTotalInputNodes(){$/;"	f	class:cell
+operator ==	cell.cpp	/^bool basicCell::operator==(char* input){$/;"	f	class:basicCell
+operator ==	cell.cpp	/^bool cell::operator==(char* input){$/;"	f	class:cell
+operator ==	cell.cpp	/^bool gate::operator== (char* input){$/;"	f	class:gate
+setCellName	cell.cpp	/^void basicCell::setCellName(char* input){$/;"	f	class:basicCell
+setCellName	cell.cpp	/^void cell::setCellName(char* input){$/;"	f	class:cell
+setDelay	cell.cpp	/^void cell::setDelay(int input){$/;"	f	class:cell
+setInput	cell.cpp	/^void basicCell::setInput(int input){$/;"	f	class:basicCell
+setInputs	cell.cpp	/^void basicCell::setInputs(vector<int> input){$/;"	f	class:basicCell
+setInputs	cell.cpp	/^void benchCell::setInputs(int input){$/;"	f	class:benchCell
+setOutput	cell.cpp	/^void basicCell::setOutput(int input){$/;"	f	class:basicCell
+setOutputs	cell.cpp	/^void benchCell::setOutputs(int input){$/;"	f	class:benchCell
+setTotalCells	cell.cpp	/^void cell::setTotalCells(int input){$/;"	f	class:cell
+setTotalInputNodes	cell.cpp	/^void cell::setTotalInputNodes(int input){$/;"	f	class:cell
+CELL_H	cell.h	2;"	d
+MAX_CHARS_PER_LINE	cell.h	/^const int MAX_CHARS_PER_LINE = 512;$/;"	v
+MAX_TOKENS_PER_LINE	cell.h	/^const int MAX_TOKENS_PER_LINE = 20;$/;"	v
+_CRT_SECURE_NO_WARNINGS	cell.h	14;"	d
+basicCell	cell.h	/^	basicCell(){};$/;"	f	class:basicCell
+basicCell	cell.h	/^class basicCell{$/;"	c
+benchCell	cell.h	/^	benchCell(){};$/;"	f	class:benchCell
+benchCell	cell.h	/^class benchCell{$/;"	c
+cell	cell.h	/^	basicCell* cell;$/;"	m	class:gate
+cell	cell.h	/^	cell(){};$/;"	f	class:cell
+cell	cell.h	/^class cell{$/;"	c
+cellName	cell.h	/^	char* cellName;$/;"	m	class:basicCell
+cellName	cell.h	/^	char* cellName;$/;"	m	class:cell
+cellName	cell.h	/^	char* cellName;$/;"	m	class:twigCell
+cells	cell.h	/^	vector<basicCell*> cells;$/;"	m	class:benchCell
+cells	cell.h	/^	vector<basicCell*> cells;$/;"	m	class:cell
+codedCell	cell.h	/^	vector<int> codedCell;$/;"	m	class:twigCell
+delay	cell.h	/^	int delay;$/;"	m	class:cell
+delay	cell.h	/^	int delay;$/;"	m	class:twigCell
+gate	cell.h	/^class gate{$/;"	c
+inputNode	cell.h	/^	vector<int> inputNode;$/;"	m	class:basicCell
+inputs	cell.h	/^	vector<int> inputs;$/;"	m	class:benchCell
+left	cell.h	/^	gate* left;$/;"	m	class:gate
+leftCut	cell.h	/^	bool leftCut;$/;"	m	class:gate
+outputNode	cell.h	/^	int outputNode;$/;"	m	class:basicCell
+outputNode	cell.h	/^	int outputNode;$/;"	m	class:cell
+outputs	cell.h	/^	vector<int> outputs;$/;"	m	class:benchCell
+parent	cell.h	/^	vector<gate*> parent;$/;"	m	class:gate
+right	cell.h	/^	gate* right;$/;"	m	class:gate
+rightCut	cell.h	/^	bool rightCut;$/;"	m	class:gate
+totalCells	cell.h	/^	int totalCells;$/;"	m	class:cell
+totalInputNodes	cell.h	/^	int totalInputNodes;$/;"	m	class:cell
+treeDepth	cell.h	/^	int treeDepth;$/;"	m	class:twigCell
+twigCell	cell.h	/^class twigCell{$/;"	c
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+DELIMITER	input.cpp	/^const char* const DELIMITER = " ";$/;"	v
+MAX_CHARS_PER_LINE	input.cpp	/^const int MAX_CHARS_PER_LINE = 512;$/;"	v
+MAX_TOKENS_PER_LINE	input.cpp	/^const int MAX_TOKENS_PER_LINE = 20;$/;"	v
+_CRT_SECURE_NO_WARNINGS	input.cpp	1;"	d	file:
+main	input.cpp	/^int main()$/;"	f
+benchParser	main.cpp	/^benchCell* benchParser(char* fileName){$/;"	f
+benchPrinter	main.cpp	/^void benchPrinter(benchCell* inputBench){$/;"	f
+decomposeTree	main.cpp	/^vector<gate*> decomposeTree(vector<gate*> notForest, benchCell* bench, int nodeMax){$/;"	f
+findMax	main.cpp	/^int findMax(benchCell* bench){$/;"	f
+forestPrinter	main.cpp	/^void forestPrinter(vector<gate*> forest, benchCell* bench){$/;"	f
+generateLibraryTree	main.cpp	/^vector<gate*> generateLibraryTree(vector<cell> library){$/;"	f
+generateTree	main.cpp	/^vector<gate*> generateTree(benchCell* bench, int nodeMax){$/;"	f
+libParser	main.cpp	/^vector<cell> libParser(char* fileName){$/;"	f
+libPrinter	main.cpp	/^void libPrinter(vector<cell> inputLib){$/;"	f
+libraryTreePrinter	main.cpp	/^void libraryTreePrinter(vector<gate*> gateLibrary){$/;"	f
+main	main.cpp	/^int main(int argc, char** argv){$/;"	f
+treePrinter	main.cpp	/^void treePrinter(vector<gate*> startingGates, benchCell* bench){$/;"	f
+twig	main.cpp	/^vector<twigCell> twig(vector<cell> library){$/;"	f

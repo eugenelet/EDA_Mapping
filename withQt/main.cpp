@@ -1,0 +1,890 @@
+#include "cell.h"
+#include <list>
+using namespace std;
+
+
+
+vector<cell> libParser(char* fileName);
+benchCell* benchParser(char* fileName);
+int findMax(benchCell* bench);
+
+vector<gate*> generateTree(benchCell* bench, int nodeMax);
+vector<gate*> decomposeTree(vector<gate*> notForest, benchCell* bench, int nodeMax);
+void treeMatching(vector<gate*> startingNode, vector<cell> library);
+
+vector<gate*> generateLibraryTree(vector<cell> library);
+vector<twigCell> twig(vector<gate*> gateLibrary, vector<cell> cellLibrary);
+
+
+
+/*****************************************
+*
+*	Debugging functions
+*
+*****************************************/
+
+
+void libPrinter(vector<cell> inputLib);
+void benchPrinter(benchCell* inputBench);
+void treePrinter(vector<gate*> startingGates, benchCell* bench);
+void forestPrinter(vector<gate*> forest, benchCell* bench);
+void libraryTreePrinter(vector<gate*> gateLibrary);
+
+
+
+
+int main(int argc, char** argv){
+	char* library;
+	char* inputBench;
+	int nodeMax;
+
+	vector<cell> cellLibrary;
+	benchCell* bench;
+	vector<gate*> startingGates;
+	vector<gate*> forest;
+	vector<twigCell> codedLibrary;
+	vector<gate*> gateLibrary;
+
+
+    if ( (argc < 2) || (strcmp(argv[1],"-h") == 0) ) { 
+          cerr << "usage: ./output [cell library] [input set] " << endl;
+          exit(1);
+    } 
+
+    library = argv[1];
+    inputBench = argv[2];
+
+
+	cellLibrary = libParser(library);
+	bench = benchParser(inputBench);
+
+	nodeMax = findMax(bench);
+
+	startingGates = generateTree(bench, nodeMax);
+	forest = decomposeTree(startingGates, bench, nodeMax);
+
+	gateLibrary = generateLibraryTree(cellLibrary);
+
+
+	codedLibrary = twig(gateLibrary, cellLibrary);
+
+	//libPrinter(cellLibrary);
+	//benchPrinter(bench);
+	//reePrinter(startingGates, bench);
+	//forestPrinter(forest, bench);
+
+	libraryTreePrinter(gateLibrary);
+
+}
+
+/*
+*		NAND 2 input		NAND_2	111
+*		NAND left input 	NAND_L	110
+*		NAND right input 	NAND_R	101
+*		NAND no input 		NAND_0	100
+*		INV 1 input			INV_1 	001
+*		INV no input 		INV_0 	000
+*/
+
+twigCell twig(vector<gate*> gateLibrary, vector<cell> cellLibrary){
+
+	for(int i = 0; i < gateLibrary.size(); i++){
+	    
+	 
+	    // Create a queue for BFS
+	    list<gate*> queue;
+	    vector<twigCell> codedLibrary;
+	 
+	    // Mark the current node as visited and enqueue it
+	    //visited[startingGates[i].cell.getOutput()] = true;
+	    queue.push_back(gateLibrary[i]);
+	 	
+	 	gate* currentGate;
+
+	 	int codedCell = 0;
+
+	 	int count = 0;
+
+	 	gateLibrary.
+	 
+	    while(!queue.empty())
+	    {
+	        // Dequeue a vertex from queue and print it
+	        currentGate = queue.front();
+	        queue.pop_front();
+
+	        if(currentGate->getInput() == 2){
+	        	if(currentGate->left != NULL && currentGate->right != NULL){
+	        		codedCell |= (NAND_2 << (count*3));
+	        	}
+	        	else if(currentGate->left == NULL && currentGate->right == NULL){
+	        		codedCell |= (NAND_0 << (count*3));
+	        	}
+	        	else if(currentGate->left == NULL){
+	        		codedCell |= (NAND_R << (count*3));
+	        	}
+	        	else if(currentGate->right == NULL){
+	        		codedCell |= (NAND_L << (count*3));
+	        	}
+	        }
+	        else if(currentGate->getInput() == 1){
+	        	if(currentGate->left != NULL){
+	        		codedCell |= (INV_1 << (count*3));
+	        	}
+	        	else{
+	        		codedCell |= (INV_0 << (count*3));
+	        	}
+	        }
+
+	        cout << "Output: " << currentGate->cell->getOutput() << endl;
+	        for(int i = 0 ; i < currentGate->cell->getInput().size(); i++){
+
+	        	cout <<"\t Input: " << currentGate->cell->getInput()[i] << endl;
+
+	        	if((i == 0) && (currentGate->left != NULL) && (currentGate->leftCut != true)){
+	        		queue.push_back(currentGate->left);
+	        	}
+	        	else if((i == 1) && (currentGate->right != NULL && (currentGate->rightCut != true))){
+	        		queue.push_back(currentGate->right);
+	        	}
+	        }
+	 		count++;
+	      
+	    }
+	    cout << endl << endl;
+	}
+}
+
+
+int findMax(benchCell* bench){
+	int max = 0;
+
+	for(int i = 0; i < bench->cells.size(); i++){
+		if(max < bench->cells[i]->getOutput()){
+			max = bench->cells[i]->getOutput();
+		}
+		for(int j = 0; j < bench->cells[i]->getInput().size(); j++){
+			if(max < bench->cells[i]->getInput()[j]){
+				max = bench->cells[i]->getInput()[j];
+			}
+		}
+	}
+	return max;
+}
+
+/**********************************************************
+*				
+*		-Use parent size to determine cutoff point.
+*		-Use visited to prevent searching a same node twice.
+*				
+**********************************************************/
+
+vector<gate*> decomposeTree(vector<gate*> notForest, benchCell* bench, int nodeMax){
+	vector<gate*> forest = notForest;
+	bool *visited = new bool[nodeMax + 1];
+	// Mark all the vertices as not visited
+    for(int i = 0; i < (bench->cells.size() + bench->getInputs().size()); i++)
+        visited[i] = false;
+
+
+
+	for(int i = 0; i < notForest.size(); i++){
+	    
+	 
+	    // Create a queue for BFS
+	    list<gate*> queue;
+	 
+	    // Mark the current node as visited and enqueue it
+	    //visited[startingGates[i].cell.getOutput()] = true;
+	    queue.push_back(notForest[i]);
+	 	
+	 	gate* currentGate;
+	 
+	    while(!queue.empty())
+	    {
+	        // Dequeue a vertex from queue and print it
+	        currentGate = queue.front();
+	        queue.pop_front();
+
+	        for(int i = 0 ; i < currentGate->cell->getInput().size(); i++){
+
+
+	        	if((i == 0) && (currentGate->left != NULL)){
+	        		if(currentGate->left->parent.size() > 1 && !visited[currentGate->left->cell->getOutput()]){
+	        			currentGate->leftCut = true;
+	        			forest.push_back(currentGate->left);
+	        			if(!visited[currentGate->left->cell->getOutput()]){
+	        				visited[currentGate->left->cell->getOutput()] = true;
+	        				queue.push_back(currentGate->left);
+	        			}
+	        		}
+	        		else{
+	        			if(visited[currentGate->left->cell->getOutput()]){
+	        				currentGate->leftCut = true;
+	        			}
+	        			queue.push_back(currentGate->left);
+	        			//visited[currentGate->cell->getOutput()] = true;
+	        		}
+	        	}
+	        	else if((i == 1) && (currentGate->right != NULL)){
+	        		if(currentGate->right->parent.size() > 1 && !visited[currentGate->right->cell->getOutput()]){
+	        			currentGate->rightCut = true;
+	        			forest.push_back(currentGate->right);
+	        			if(!visited[currentGate->right->cell->getOutput()]){
+	        				visited[currentGate->right->cell->getOutput()] = true;
+	        				queue.push_back(currentGate->right);
+	        			}
+	        		}
+	        		else{
+	        			if(visited[currentGate->right->cell->getOutput()]){
+	        				currentGate->rightCut = true;
+	        			}
+	        			//visited[currentGate->cell->getOutput()] = true;
+	        			queue.push_back(currentGate->right);
+	        		}
+	        	}
+	        }
+	 
+	      
+	    }
+	}
+
+	delete [] visited;
+	return forest;
+}
+
+
+
+
+/**********************************************************
+*		
+*		Gates are identified by their output nodes.
+*		
+**********************************************************/
+
+vector<gate*> generateLibraryTree(vector<cell> library){
+
+ 	// Create a queue for BFS
+ 	/*
+	*			
+	*			- We'll scan through bench for every nodes.
+	*			- Cell's information are attached to currentNodes(startingGates) because bench
+	*			  cells were copied into gateTree's cell 
+	*			
+ 	*/
+ 	vector<gate*> gateLibrary;
+
+ 	list<gate*> queue;
+ 	gate* currentNode;
+ 	for(int k = 0; k < library.size(); k++){
+
+ 		gate *gateTree = new(gate);
+		gateTree->cell = library[k].cells[library[k].cells.size() - 1]; // output node
+		gateTree->parent.push_back(gateTree);
+		gateTree->left = NULL;
+		gateTree->right = NULL;
+		
+		gateLibrary.push_back(gateTree);
+
+ 		currentNode = gateTree; //gate class
+ 		queue.push_back(currentNode); // push_back a basic cell
+
+ 		while(!queue.empty()){
+ 			currentNode = queue.front();
+ 			queue.pop_front();
+ 			//Search for OUTPUT NODE of following cells 
+ 			//that matches INPUT NODE of current cell
+ 			for(int i = 0 ; i < currentNode->cell->getInput().size(); i++){
+
+ 				for(int j = 0 ; j < library[k].cells.size(); j++){
+ 					if(currentNode->cell->getInput()[i] == library[k].cells[j]->getOutput()){
+ 						if(i == 0){
+ 							gate *newGate = new(gate);
+ 							newGate->cell = library[k].cells[j];
+ 							newGate->left = NULL;
+ 							newGate->right = NULL;
+ 							currentNode->left = newGate;
+ 							currentNode->left->parent.push_back(currentNode);
+ 							queue.push_back(currentNode->left);
+ 							break; // node found, stop searching the whole tree
+ 						}
+ 						else if(i == 1){
+ 							gate *newGate = new(gate);
+ 							newGate->cell = library[k].cells[j];
+ 							newGate->left = NULL;
+ 							newGate->right = NULL;
+ 							currentNode->right = newGate; 	
+ 							currentNode->right->parent.push_back(currentNode);	
+ 							queue.push_back(currentNode->right);			
+ 							break;	// node found, stop searching the whole tree	
+ 						}
+ 					}
+ 				}
+ 				
+
+ 				
+ 			}
+
+ 		}//end of while
+	}
+	return gateLibrary;
+}
+
+
+
+
+
+
+/**********************************************************
+*		
+*		Gates are identified by their output nodes.
+*		Visited: Used to identify gate with multiple fanouts only
+*		
+**********************************************************/
+
+vector<gate*> generateTree(benchCell* bench, int nodeMax){
+
+	vector<gate*> startingGates;
+
+
+	//initialize visited NODES
+
+	bool *visited = new bool[nodeMax + 1];
+
+
+	cout << "Node Max: " << (nodeMax + 1) << endl;
+	   // Mark all the vertices as not visited
+    for(int i = 0; i < (nodeMax + 1); i++)
+        visited[i] = false;
+
+
+	//get the output nodes as the head of the tree
+	//start searching for starting nodes(output node) and store it into startingGates
+ 	
+	int totalOutputs = bench->getOutputs().size();
+
+	for(int i = 0; i < totalOutputs; i++){
+		gate *gateTree = new(gate);
+		visited[bench->getOutputs()[i]] = true;
+		for(int j = 0; j != bench->cells.size(); j++){
+			if(bench->getOutputs()[i] == bench->cells[j]->getOutput()){
+				gateTree->cell = bench->cells[j];
+				gateTree->parent.push_back(gateTree);
+				gateTree->left = NULL;
+				gateTree->right = NULL;
+				startingGates.push_back(gateTree);
+			}
+		}
+	}
+
+ 	// Create a queue for BFS
+ 	/*
+	*			
+	*			- We'll scan through bench for every nodes.
+	*			- Cell's information are attached to currentNodes(startingGates) because bench
+	*			  cells were copied into gateTree's cell 
+	*			
+ 	*/
+
+ 	list<gate*> queue;
+ 	gate* currentNode = new(gate);
+ 	gate* currentNode_mul;
+ 	for(int i = 0; i< startingGates.size(); i++){
+ 		currentNode = startingGates[i]; //gate class
+ 		queue.push_back(startingGates[i]); // push_back a basic cell
+
+ 		while(!queue.empty()){
+ 			currentNode = queue.front();
+ 			queue.pop_front();
+ 			//Search for OUTPUT NODE of following cells 
+ 			//that matches INPUT NODE of current cell
+ 			for(int i = 0 ; i < currentNode->cell->getInput().size(); i++){
+
+
+ 				if(visited[currentNode->cell->getInput()[i]]){
+
+
+ 				 	/*
+					*		- merge MULTIPLE FANOUT nodes	
+					*		- use BRUTE FORCE method (BFS) to search for OUTPUT NODE
+					*		  from the linked list built same as current INPUT NODE
+					*			
+ 					*/
+ 					for(int k = 0; k < startingGates.size(); k++){
+						currentNode_mul = startingGates[k];
+					 
+					    // Create a queue for BFS
+					    list<gate*> queue_mul;
+					 
+					    // Mark the current node as visited and enqueue it
+					    //visited_mul[currentNode_mul->cell->getOutput()] = true;
+					    queue_mul.push_back(currentNode_mul);
+				
+					 	
+					    while(!queue_mul.empty())
+					    {
+					        // Dequeue a vertex from queue and print it
+					        currentNode_mul = queue_mul.front();
+					        queue_mul.pop_front();
+					 		//cout << "OUT: " << currentNode_mul->cell->getOutput() << endl;
+					 		//cout << "IN: " << currentNode->cell->getInput()[i] << endl;
+					 		
+					 		if(currentNode_mul->cell->getOutput() == currentNode->cell->getInput()[i]){
+					 			if(i == 0){//first input (LEFT)
+					 				currentNode->left = currentNode_mul;
+					 				currentNode->left->parent.push_back(currentNode);
+					 			}
+					 			else if(i == 1){//second input(RIGHT)
+					 				currentNode->right = currentNode_mul;
+					 				currentNode->right->parent.push_back(currentNode);
+					 			}
+					 			break; //NODE FOUND!!!!
+					 		}
+					 		else{
+					 			if(currentNode_mul->left != NULL){
+					 				queue_mul.push_back(currentNode_mul->left);
+					 			}
+					 			if(currentNode_mul->right != NULL){
+					 				queue_mul.push_back(currentNode_mul->right);
+					 			}
+					 		}
+					    }
+
+
+ 					}
+ 				}
+
+
+
+ 				else{//not visited, search the whole Database using BRUTE FORCE method (Total Cells)
+ 					for(int j = 0 ; j < bench->cells.size(); j++){
+ 						if(currentNode->cell->getInput()[i] == bench->cells[j]->getOutput()){
+ 							if(i == 0){
+ 								gate *newGate = new(gate);
+ 								newGate->cell = bench->cells[j];
+ 								newGate->left = NULL;
+ 								newGate->right = NULL;
+ 								currentNode->left = newGate;
+ 								currentNode->left->parent.push_back(currentNode);
+ 								queue.push_back(currentNode->left);
+ 								visited[currentNode->cell->getInput()[i]] = true;
+ 								break; // node found, stop searching the whole tree
+ 							}
+ 							else if(i == 1){
+ 								gate *newGate = new(gate);
+ 								newGate->cell = bench->cells[j];
+ 								newGate->left = NULL;
+ 								newGate->right = NULL;
+ 								currentNode->right = newGate; 	
+ 								currentNode->right->parent.push_back(currentNode);	
+ 								queue.push_back(currentNode->right);
+ 								visited[currentNode->cell->getInput()[i]] = true;			
+ 								break;	// node found, stop searching the whole tree	
+ 							}
+ 						}
+ 					}
+
+ 				}
+
+ 				
+ 			}
+
+ 		}//end of while
+	}
+	delete [] visited;
+	return startingGates;
+}
+
+
+vector<cell> libParser(char* fileName){
+	vector<cell> totalCells;
+	// create a file-reading object
+	ifstream fin;
+	fin.open(fileName); // open a file
+	if (!fin.good()){
+		cerr << "usage: ./output [cell library] [input set] " << endl;
+    	exit(1);
+    }
+	
+	// read each line of the file
+	while (!fin.eof())
+	{
+		cell dummyCell;
+		totalCells.push_back(dummyCell);
+
+		char buf[MAX_CHARS_PER_LINE];
+		fin.getline(buf, MAX_CHARS_PER_LINE);
+		
+		
+		// array to store memory addresses of the tokens in buf
+		char* token; // initialize to 0
+		char* newString;
+		
+		// parse the line
+		token = strtok(buf, " ");
+		//newString = new char[strlen(token) + 1];
+		//strncpy(newString, token, strlen(token));
+		//totalCells.back().setCellName((char*)newString); // set Cell's Name
+		totalCells.back().setCellName(token); // set Cell's Name
+
+		token = strtok(0, " ");
+		newString = new char[strlen(token) + 1];
+		strncpy(newString, token, strlen(token));
+		totalCells.back().setTotalInputNodes(atoi(newString)); // set Cell's Total input Nodes
+
+		fin.getline(buf, MAX_CHARS_PER_LINE);
+
+		token = strtok(buf, " ");
+		newString = new char[strlen(token) + 1];
+		strncpy(newString, token, strlen(token));
+		totalCells.back().setDelay(atoi(newString)); // set Cell's Delay
+
+		fin.getline(buf, MAX_CHARS_PER_LINE);
+		while( (buf[0] != '\r') && (!fin.eof()) ){
+
+			basicCell* dummyBasicCell = new(basicCell);
+
+			token = strtok(buf, " ");
+			newString = new char[strlen(token) + 1];
+			strncpy(newString, token, strlen(token));
+			dummyBasicCell->setOutput(atoi(newString));
+
+			strtok(0, " ");
+
+			token = strtok(0, "(");
+			//newString = new char[strlen(token) + 1];
+			//strncpy(newString, token, strlen(token));
+			//dummyBasicCell->setCellName((char*)newString);
+			dummyBasicCell->setCellName(token);
+
+
+			token = strtok(0, ")");
+			newString = new char[strlen(token) + 1];
+			strncpy(newString, token, strlen(token));
+
+			token = strtok(newString, ",");
+
+			while(token != NULL){
+				dummyBasicCell->setInput(atoi(token));
+				token = strtok(0, ",");
+			}
+
+			totalCells.back().cells.push_back(dummyBasicCell);
+			fin.getline(buf, MAX_CHARS_PER_LINE);
+		}
+	}
+
+
+	return totalCells;
+
+}
+
+
+benchCell* benchParser(char* fileName){
+	benchCell* bench = new(benchCell);
+	// create a file-reading object
+	ifstream fin;
+	fin.open(fileName); // open a file
+	if (!fin.good()){
+		cerr << "usage: ./output [cell library] [input set] " << endl;
+    	exit(1);
+    }
+
+	char buf[MAX_CHARS_PER_LINE];
+	
+	
+	// array to store memory addresses of the tokens in buf
+	char* token; // initialize to 0
+	char* newString;
+/*
+*
+*	Set inputs
+*
+*/
+	while(1){
+		fin.getline(buf, MAX_CHARS_PER_LINE);
+		if((buf[0] != '\r') && (!fin.eof()) && (buf[0] != 0) && (buf[0] != '#')){
+			break;
+		}
+	}
+	
+	while( (buf[0] != '\r') && (!fin.eof()) && (buf[0] != 0)){
+		strtok(buf, "(");
+		token = strtok(0, " )");
+
+		token = strtok(token, "n");
+
+		newString = new char[strlen(token) + 1];
+		strncpy(newString, token, strlen(token));
+		bench->setInputs(atoi(newString));
+		fin.getline(buf, MAX_CHARS_PER_LINE);
+	}	
+
+
+
+/*
+*
+*	Set outputs
+*
+*/
+	fin.getline(buf, MAX_CHARS_PER_LINE);
+	while( (buf[0] != '\r') && (!fin.eof())  && (buf[0] != 0)){
+		char* tmp = strtok(buf, "(");
+		token = strtok(0, " )");
+
+		token = strtok(token, "n");
+		
+		newString = new char[strlen(token) + 1];
+		strncpy(newString, token, strlen(token));
+		bench->setOutputs(atoi(newString));
+		fin.getline(buf, MAX_CHARS_PER_LINE);
+	}		
+
+/*
+*
+*	Set Cells
+*
+*/
+	fin.getline(buf, MAX_CHARS_PER_LINE);
+	while( (buf[0] != '\r') && (!fin.eof())  && (buf[0] != 0)){
+		basicCell* dummyBasicCell = new(basicCell);
+		//token = strtok(buf, "n");
+		token = strtok(buf, " ");
+
+		newString = new char[strlen(token) + 1];
+		strncpy(newString, token, strlen(token));
+		if(newString[0] == 'n'){
+			newString[0] = ' ';
+		}
+		dummyBasicCell->setOutput(atoi(newString));
+
+		strtok(0, " ");
+		token = strtok(0, "(");
+		//newString = new char[strlen(token) + 1];
+		//strncpy(newString, token, strlen(token));
+		//dummyBasicCell->setCellName((char*)newString);
+		dummyBasicCell->setCellName(token);
+		token = strtok(0, ")");
+		newString = new char[strlen(token) + 1];
+		strncpy(newString, token, strlen(token));
+
+		token = strtok(token, ",");
+		//cout << "token[0]: " << token[0] << endl;
+		if(token[0] == 'n'){
+			token[0] = ' ';
+		}
+
+
+		while(token != NULL){
+			dummyBasicCell->setInput(atoi(token));
+			//char* tmp = strtok(0, "n");
+			//token = strtok(tmp, "n");
+			token = strtok(0, ",");
+			if(token != NULL){
+				//cout << "token[1]: " << token[1] << endl;
+				if(token[1] == 'n'){
+					token[1] = ' ';
+				}
+			}
+			
+
+		}
+		bench->cells.push_back(dummyBasicCell);
+		fin.getline(buf, MAX_CHARS_PER_LINE);
+	}
+
+	return bench;
+
+}
+
+
+
+void libPrinter(vector<cell> inputLib){
+	std::vector<cell>::iterator cellIterator;
+	for(cellIterator = inputLib.begin(); cellIterator != inputLib.end(); cellIterator++){
+		cout << "Top Cell Name: " << cellIterator->getCellName() << endl;
+		cout << "Total Input Nodes: " << cellIterator->getTotalInputNodes() << endl;
+		cout << "Cell Delay: " << cellIterator->getDelay() << endl;
+		std::vector<basicCell*>::iterator basicCellIterator;
+		for(basicCellIterator = cellIterator->cells.begin(); basicCellIterator != cellIterator->cells.end(); basicCellIterator++){
+			cout << "\t Cell Name: " << (*basicCellIterator)->getCellName() << endl;
+			cout << "\t Output: " << (*basicCellIterator)->getOutput() << endl;
+			std::vector<int>::iterator inputIt;
+			
+			vector<int> inputs = (*basicCellIterator)->getInput();//something's wrong with iterator
+			for(int i = 0; i< inputs.size(); i++){
+				cout << "\t Input: " << inputs[i] << endl;
+			}
+		}
+		cout << endl << endl;
+	}
+
+}
+
+
+
+void benchPrinter(benchCell* inputBench){
+	vector<int> inputs = inputBench->getInputs();
+	vector<int> outputs = inputBench->getOutputs();
+	cout << "Total Cells: " << inputBench->cells.size() << endl;
+	for(int i = 0; i < inputs.size(); i++){
+		cout << "Input: " << inputs[i] << endl;
+	}
+
+	cout << endl ;
+
+
+	for(int i = 0; i < outputs.size(); i++){
+		cout << "Output: " << outputs[i] << endl;
+	}
+
+	cout << endl;
+
+
+	std::vector<basicCell*>::iterator basicCellIterator;
+	for(basicCellIterator = inputBench->cells.begin(); basicCellIterator != inputBench->cells.end(); basicCellIterator++){
+		cout << "\t Cell Name: " << (*basicCellIterator)->getCellName() << endl;
+		cout << "\t Output: " << (*basicCellIterator)->getOutput() << endl;
+		std::vector<int>::iterator inputIt;
+		
+		vector<int> inputs = (*basicCellIterator)->getInput();//something's wrong with iterator
+		for(int i = 0; i< inputs.size(); i++){
+			cout << "\t Input: " << inputs[i] << endl;
+		}
+	}
+	cout << endl << endl;
+	
+
+}
+
+void treePrinter(vector<gate*> startingGates, benchCell* bench){
+	
+	// Mark all the vertices as not visited
+	//bool *visited = new bool[bench.cells.size() + bench.getInputs().size()];
+	//for(int j = 0; j < (bench.cells.size() + bench.getInputs().size()); j++)
+	//    visited[j] = false;
+
+	for(int i = 0; i < startingGates.size(); i++){
+	    
+	 
+	    // Create a queue for BFS
+	    list<gate*> queue;
+	 
+	    // Mark the current node as visited and enqueue it
+	    //visited[startingGates[i].cell.getOutput()] = true;
+	    queue.push_back(startingGates[i]);
+	 	
+	 	gate* currentGate;
+	 
+	    while(!queue.empty())
+	    {
+	        // Dequeue a vertex from queue and print it
+	        currentGate = queue.front();
+	        queue.pop_front();
+
+	        cout << "Output: " << currentGate->cell->getOutput() << endl;
+	        for(int i = 0 ; i < currentGate->cell->getInput().size(); i++){
+
+	        	cout <<"\t Input: " << currentGate->cell->getInput()[i] << endl;
+
+	        	if((i == 0) && (currentGate->left != NULL)){
+	        		queue.push_back(currentGate->left);
+	        	}
+	        	else if((i == 1) && (currentGate->right != NULL)){
+	        		queue.push_back(currentGate->right);
+	        	}
+	        }
+	 
+	      
+	    }
+	}
+}
+
+
+
+void forestPrinter(vector<gate*> forest, benchCell* bench){
+	
+	// Mark all the vertices as not visited
+	//bool *visited = new bool[bench.cells.size() + bench.getInputs().size()];
+	//for(int j = 0; j < (bench.cells.size() + bench.getInputs().size()); j++)
+	//    visited[j] = false;
+
+	for(int i = 0; i < forest.size(); i++){
+	    
+	 
+	    // Create a queue for BFS
+	    list<gate*> queue;
+	 
+	    // Mark the current node as visited and enqueue it
+	    //visited[startingGates[i].cell.getOutput()] = true;
+	    queue.push_back(forest[i]);
+	 	
+	 	gate* currentGate;
+	 
+	    while(!queue.empty())
+	    {
+	        // Dequeue a vertex from queue and print it
+	        currentGate = queue.front();
+	        queue.pop_front();
+
+	        cout << "Output: " << currentGate->cell->getOutput() << endl;
+	        for(int i = 0 ; i < currentGate->cell->getInput().size(); i++){
+
+	        	cout <<"\t Input: " << currentGate->cell->getInput()[i] << endl;
+
+	        	if((i == 0) && (currentGate->left != NULL) && (currentGate->leftCut != true)){
+	        		queue.push_back(currentGate->left);
+	        	}
+	        	else if((i == 1) && (currentGate->right != NULL && (currentGate->rightCut != true))){
+	        		queue.push_back(currentGate->right);
+	        	}
+	        }
+	 
+	      
+	    }
+	    cout << endl << endl;
+	}
+}
+
+
+
+
+void libraryTreePrinter(vector<gate*> gateLibrary){
+	
+
+	for(int i = 0; i < gateLibrary.size(); i++){
+	    
+	 
+	    // Create a queue for BFS
+	    list<gate*> queue;
+	 
+	    // Mark the current node as visited and enqueue it
+	    //visited[startingGates[i].cell.getOutput()] = true;
+	    queue.push_back(gateLibrary[i]);
+	 	
+	 	gate* currentGate;
+	 
+	    while(!queue.empty())
+	    {
+	        // Dequeue a vertex from queue and print it
+	        currentGate = queue.front();
+	        queue.pop_front();
+
+	        cout << "Output: " << currentGate->cell->getOutput() << endl;
+	        for(int i = 0 ; i < currentGate->cell->getInput().size(); i++){
+
+	        	cout <<"\t Input: " << currentGate->cell->getInput()[i] << endl;
+
+	        	if((i == 0) && (currentGate->left != NULL) && (currentGate->leftCut != true)){
+	        		queue.push_back(currentGate->left);
+	        	}
+	        	else if((i == 1) && (currentGate->right != NULL && (currentGate->rightCut != true))){
+	        		queue.push_back(currentGate->right);
+	        	}
+	        }
+	 
+	      
+	    }
+	    cout << endl << endl;
+	}
+}

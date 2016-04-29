@@ -1,13 +1,47 @@
 #include "cell.h"
 
 using namespace std;
+
+
+/*=================================================================
+
+			GATE
+
+=================================================================*/
+
+gate::gate(){
+	left = NULL;
+	right = NULL;
+	cell = NULL;
+	leftCut = false;
+	rightCut = false;
+}
+
+bool gate::operator== (char* input){
+	if(strcmp(this->cell->getCellName(), input) == 0){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
+
+/*=================================================================
+
+			CELL
+
+=================================================================*/
+
 /*
 *
 *	Cell Setter
 *
 */
 void cell::setCellName(char* input){
-	cellName = input;
+	char* newString = new char[strlen(input) + 1];
+	strncpy(newString, input, strlen(input));
+	newString[strlen(input)] = '\0';
+	cellName = newString;
 }
 
 
@@ -52,6 +86,20 @@ int cell::getTotalCells(){
 	return totalCells;	
 }
 
+bool cell::operator==(char* input){
+	if(strcmp(this->cellName, input) == 0){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
+
+/*=================================================================
+
+			BASIC CELL
+
+=================================================================*/
 
 /*
 *
@@ -61,7 +109,10 @@ int cell::getTotalCells(){
 
 
 void basicCell::setCellName(char* input){
-	cellName = input;
+	char* newString = new char[strlen(input) + 1];
+	strncpy(newString, input, strlen(input));
+	newString[strlen(input)] = '\0';
+	cellName = newString;
 }
 
 
@@ -74,6 +125,10 @@ void basicCell::setOutput(int input){
 
 void basicCell::setInput(int input){
 	inputNode.push_back(input);
+}
+
+void basicCell::setInputs(vector<int> input){
+	inputNode = input;
 }
 
 /*
@@ -98,7 +153,20 @@ vector<int> basicCell::getInput(){
 	return this->inputNode;	
 }
 
+bool basicCell::operator==(char* input){
+	if(strcmp(this->cellName, input) == 0){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
 
+/*=================================================================
+
+			BENCH CELL
+
+=================================================================*/
 
 /*
 *
